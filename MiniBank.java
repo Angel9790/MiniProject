@@ -23,10 +23,47 @@ public class MiniBank {
         System.out.println("     Branch : " + bank.branch());
         System.out.println("==================================");
 
+        Customer c1 = new Customer("Angel", "angel@gmail.com", "9876543210");
+
+        System.out.println("\nCustomer Details");
+        System.out.println("Customer ID: " + c1.getCustomerId());
+        System.out.println("Name: " + c1.getName());
+        System.out.println("Email: " + c1.getEmail());
+        System.out.println("Mobile: " + c1.getMobile());
+
+
+        Account[] accounts = new Account[3];
+
+        accounts[0] = new Account("Angel", 1000);
+        accounts[1] = new Account("Riya");
+        accounts[2] = new Account("Arav", 2000);
+
+        accounts[0].deposit(500);
+        accounts[0].withdraw(200);
+
+        accounts[1].deposit(1000);
+        accounts[1].withdraw(300);
+
+        accounts[2].deposit(500);
+        accounts[2].withdraw(3000);
+
+    
+        System.out.println("\n----------- ACCOUNT DETAILS -----------");
+
+        for (int i = 0; i < accounts.length; i++) {
+            System.out.println("\nAccount Number: " +
+                    accounts[i].getAccountNumber());
+            System.out.println("Owner: " +
+                    accounts[i].getOwnerName());
+            System.out.println("Balance: Rs. " +
+                    accounts[i].getBalance());
+            System.out.println("Active: " +
+                    accounts[i].isActive());
+        }
+
         int choice;
 
         do {
-            
             System.out.println("\n----------- MENU -----------");
             System.out.println("1. Open Account");
             System.out.println("2. Deposit");
