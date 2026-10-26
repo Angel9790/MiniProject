@@ -3,41 +3,46 @@ import exception.AccountNotFoundException;
 import exception.BankException;
 import exception.InsufficientFundsException;
 import exception.InvalidAmountException;
+
+import java.io.IOException;
+import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.InputMismatchException;
 import java.util.Scanner;
+
 import model.Account;
 import model.CurrentAccount;
 import model.Customer;
 import model.FixedDepositAccount;
 import model.SavingsAccount;
+
 import service.AccountWorker;
 import service.AnnotationValidator;
 import service.BankResource;
 import service.DeadlockDemo;
+import service.ReportGenerator;
+import service.StatePersister;
 import service.TransactionBuffer;
+import service.TransactionLog;
 import service.TransactionProcessor;
+
 import util.Command;
 import util.CommandParser;
 import util.StatementFormatter;
 import util.Validator;
-import static util.Validator.isValidEmail;
 import util.WithdrawRule;
 
-record BankInfo(String name, String branch)
-{
+import static util.Validator.isValidEmail;
+
+record BankInfo(String name, String branch) {
 }
 
-enum MenuOption
-{
-    OPEN_ACCOUNT,
-    DEPOSIT,
-    WITHDRAW,
-    TRANSFER,
-    EXIT
+enum MenuOption {
+    OPEN_ACCOUNT, DEPOSIT, WITHDRAW, TRANSFER, EXIT
 }
 
-public class MiniBank
-{
+public class MiniBank {
+
     static Scanner sc = new Scanner(System.in);
 
     static Customer[] customers = new Customer[100];
@@ -45,10 +50,9 @@ public class MiniBank
 
     static int customerCount = 0;
     static int accountCount = 0;
-    
 
-    public static void main(String[] args)
-    {
+    public static void main(String[] args) {
+
         BankInfo bank = new BankInfo("MiniBank", "Anand Branch");
 
         System.out.println("================================");
@@ -83,11 +87,11 @@ public class MiniBank
         testPractical8();
         testPractical9();
         testPractical10();
+        testPractical11();
 
         int choice = 0;
 
-        do
-        {
+        do {
             System.out.println("\n===== MINIBANK MENU =====");
             System.out.println("1. Open Account");
             System.out.println("2. Deposit");
@@ -97,12 +101,10 @@ public class MiniBank
             System.out.println("6. Exit");
             System.out.print("Enter your choice: ");
 
-            try
-            {
+            try {
                 choice = sc.nextInt();
 
-                MenuOption selected = switch (choice)
-                {
+                MenuOption selected = switch (choice) {
                     case 1 -> MenuOption.OPEN_ACCOUNT;
                     case 2 -> MenuOption.DEPOSIT;
                     case 3 -> MenuOption.WITHDRAW;
@@ -111,18 +113,12 @@ public class MiniBank
                     default -> null;
                 };
 
-                if (choice == 5)
-                {
+                if (choice == 5) {
                     displayAccounts();
-                }
-                else if (selected == null)
-                {
+                } else if (selected == null) {
                     System.out.println("Invalid choice!");
-                }
-                else
-                {
-                    switch (selected)
-                    {
+                } else {
+                    switch (selected) {
                         case OPEN_ACCOUNT:
                             System.out.println(
                                 "Open Account - to be implemented in a later lab"
@@ -148,15 +144,13 @@ public class MiniBank
                             break;
                     }
                 }
-            }
-            catch (InputMismatchException e)
-            {
+
+            } catch (InputMismatchException e) {
                 System.out.println("Please enter a valid menu number.");
                 sc.nextLine();
                 choice = 0;
-            }
-            finally
-            {
+
+            } finally {
                 System.out.println("Menu operation completed.");
             }
 
@@ -165,27 +159,38 @@ public class MiniBank
         sc.close();
     }
 
-    public static void displayAccounts()
-    {
+    public static void displayAccounts() {
         System.out.println("\n--- Account Details ---");
 
-        for (int i = 0; i < accountCount; i++)
-        {
+        for (int i = 0; i < accountCount; i++) {
             System.out.println(accounts[i]);
         }
     }
 
-    public static void depositMoney()
-    {
-        try
-        {
+    // PRACTICAL 11: Record a transaction in the log file
+    public static void logTransaction(
+            String type, long amount, String accountNumber) {
+
+        try {
+            TransactionLog.append(
+                Path.of("logs", "transactions.log"),
+                type + "|" + amount + "|" + accountNumber
+            );
+        } catch (IOException e) {
+            System.out.println(
+                "Could not write transaction log: " + e.getMessage()
+            );
+        }
+    }
+
+    public static void depositMoney() {
+        try {
             System.out.print("Enter account number: ");
             String number = sc.next();
 
             Account account = findAccount(number);
 
-            if (account == null)
-            {
+            if (account == null) {
                 throw new AccountNotFoundException(number);
             }
 
@@ -194,39 +199,38 @@ public class MiniBank
 
             account.deposit(amount);
 
+            logTransaction(
+                "DEPOSIT", amount, account.getAccountNumber()
+            );
+
             System.out.println("Deposit successful!");
             System.out.println(account);
-        }
-        catch (AccountNotFoundException e)
-        {
+
+        } catch (AccountNotFoundException e) {
             System.out.println(e.getMessage());
-        }
-        catch (InvalidAmountException e)
-        {
+
+        } catch (InvalidAmountException e) {
             System.out.println(e.getMessage());
-        }
-        catch (InputMismatchException e)
-        {
-            System.out.println("Invalid amount. Please enter a whole number.");
+
+        } catch (InputMismatchException e) {
+            System.out.println(
+                "Invalid amount. Please enter a whole number."
+            );
             sc.nextLine();
-        }
-        finally
-        {
+
+        } finally {
             System.out.println("Deposit operation completed.");
         }
     }
 
-    public static void withdrawMoney()
-    {
-        try
-        {
+    public static void withdrawMoney() {
+        try {
             System.out.print("Enter account number: ");
             String number = sc.next();
 
             Account account = findAccount(number);
 
-            if (account == null)
-            {
+            if (account == null) {
                 throw new AccountNotFoundException(number);
             }
 
@@ -235,37 +239,36 @@ public class MiniBank
 
             account.withdraw(amount);
 
+            logTransaction(
+                "WITHDRAW", amount, account.getAccountNumber()
+            );
+
             System.out.println("Withdrawal successful!");
             System.out.println(account);
-        }
-        catch (InsufficientFundsException e)
-        {
+
+        } catch (InsufficientFundsException e) {
             System.out.println(e.getMessage());
             System.out.println("Shortfall: " + e.getShortfall());
-        }
-        catch (AccountNotFoundException e)
-        {
+
+        } catch (AccountNotFoundException e) {
             System.out.println(e.getMessage());
-        }
-        catch (InvalidAmountException e)
-        {
+
+        } catch (InvalidAmountException e) {
             System.out.println(e.getMessage());
-        }
-        catch (InputMismatchException e)
-        {
-            System.out.println("Invalid amount. Please enter a whole number.");
+
+        } catch (InputMismatchException e) {
+            System.out.println(
+                "Invalid amount. Please enter a whole number."
+            );
             sc.nextLine();
-        }
-        finally
-        {
+
+        } finally {
             System.out.println("Withdrawal operation completed.");
         }
     }
 
-    public static void transferMoney()
-    {
-        try
-        {
+    public static void transferMoney() {
+        try {
             System.out.print("Enter sender account number: ");
             String senderNumber = sc.next();
 
@@ -275,13 +278,11 @@ public class MiniBank
             Account sender = findAccount(senderNumber);
             Account receiver = findAccount(receiverNumber);
 
-            if (sender == null)
-            {
+            if (sender == null) {
                 throw new AccountNotFoundException(senderNumber);
             }
 
-            if (receiver == null)
-            {
+            if (receiver == null) {
                 throw new AccountNotFoundException(receiverNumber);
             }
 
@@ -290,44 +291,45 @@ public class MiniBank
 
             sender.transfer(receiver, amount);
 
+            logTransaction(
+                "WITHDRAW", amount, sender.getAccountNumber()
+            );
+
+            logTransaction(
+                "DEPOSIT", amount, receiver.getAccountNumber()
+            );
+
             System.out.println("Transfer successful!");
             System.out.println("Sender: " + sender);
             System.out.println("Receiver: " + receiver);
-        }
-        catch (InsufficientFundsException e)
-        {
+
+        } catch (InsufficientFundsException e) {
             System.out.println(e.getMessage());
             System.out.println("Shortfall: " + e.getShortfall());
-        }
-        catch (AccountNotFoundException e)
-        {
+
+        } catch (AccountNotFoundException e) {
             System.out.println(e.getMessage());
-        }
-        catch (InvalidAmountException e)
-        {
+
+        } catch (InvalidAmountException e) {
             System.out.println(e.getMessage());
-        }
-        catch (BankException e)
-        {
+
+        } catch (BankException e) {
             System.out.println(e.getMessage());
-        }
-        catch (InputMismatchException e)
-        {
-            System.out.println("Invalid amount. Please enter a whole number.");
+
+        } catch (InputMismatchException e) {
+            System.out.println(
+                "Invalid amount. Please enter a whole number."
+            );
             sc.nextLine();
-        }
-        finally
-        {
+
+        } finally {
             System.out.println("Transfer operation completed.");
         }
     }
 
-    public static Account findAccount(String number)
-    {
-        for (int i = 0; i < accountCount; i++)
-        {
-            if (accounts[i].getAccountNumber().equals(number))
-            {
+    public static Account findAccount(String number) {
+        for (int i = 0; i < accountCount; i++) {
+            if (accounts[i].getAccountNumber().equals(number)) {
                 return accounts[i];
             }
         }
@@ -335,8 +337,8 @@ public class MiniBank
         return null;
     }
 
-    public static void testPractical3()
-    {
+    
+    public static void testPractical3() {
         System.out.println("\n===== PRACTICAL 3 TESTS =====");
 
         Account a1 =
@@ -379,8 +381,8 @@ public class MiniBank
             + (c1.getAddress() != c2.getAddress()));
     }
 
-    public static void testPractical4()
-    {
+   
+    public static void testPractical4() {
         System.out.println("\n===== PRACTICAL 4 TESTS =====");
 
         System.out.println("Valid mobile: "
@@ -409,8 +411,7 @@ public class MiniBank
 
         System.out.println("\n--- Command Parser Test ---");
 
-        try
-        {
+        try {
             Command command =
                 CommandParser.parse("DEPOSIT AC0001 500");
 
@@ -418,34 +419,30 @@ public class MiniBank
             System.out.println("Account number: "
                 + command.accountNumber());
             System.out.println("Amount: " + command.amount());
-        }
-        catch (IllegalArgumentException e)
-        {
+
+        } catch (IllegalArgumentException e) {
             System.out.println("Error: " + e.getMessage());
         }
 
         System.out.println("\n--- Account Statement ---");
 
-        if (accountCount > 0)
-        {
+        if (accountCount > 0) {
             System.out.println(
                 StatementFormatter.buildStatement(accounts[0])
             );
         }
     }
 
-    public static void testPractical6()
-    {
+   
+    public static void testPractical6() {
         System.out.println("\n===== PRACTICAL 6 TESTS =====");
 
         Account account =
             new SavingsAccount("AC0088", "Test", 10000, 1000);
 
-        WithdrawRule rule1 = new WithdrawRule()
-        {
+        WithdrawRule rule1 = new WithdrawRule() {
             @Override
-            public boolean allow(Account account, long amount)
-            {
+            public boolean allow(Account account, long amount) {
                 return amount > 0
                     && account.getBalance() - amount >= 1000;
             }
@@ -469,8 +466,7 @@ public class MiniBank
             new FixedDepositAccount("AC0003", "Arav", 2500)
         };
 
-        for (Account acc : testAccounts)
-        {
+        for (Account acc : testAccounts) {
             System.out.println(
                 acc.getOwnerName()
                 + " | Rate: " + acc.interestRate() + "%"
@@ -479,212 +475,215 @@ public class MiniBank
             );
         }
 
-        if (account instanceof SavingsAccount)
-        {
+        if (account instanceof SavingsAccount) {
             System.out.println("Savings account detected.");
         }
     }
 
-    public static void testPractical7()
-    {
+    
+    public static void testPractical7() {
         System.out.println("\n===== PRACTICAL 7 TESTS =====");
-        System.out.println("--- Annotation Validation ---");
 
         Account testAccount =
             new SavingsAccount("AC0099", "Test", -500, 1000);
 
         String[] errors = AnnotationValidator.validate(testAccount);
 
-        if (errors.length == 0)
-        {
+        if (errors.length == 0) {
             System.out.println("No validation errors found.");
-        }
-        else
-        {
-            for (String error : errors)
-            {
+        } else {
+            for (String error : errors) {
                 System.out.println("Validation error: " + error);
             }
         }
     }
 
-    public static void testPractical8()
-    {
+    public static void testPractical8() {
         System.out.println("\n===== PRACTICAL 8 TESTS =====");
-
         System.out.println("--- Try-with-resources test ---");
 
-    try (BankResource resource = new BankResource())
-    {
-        resource.useResource();
-    }
-    catch (Exception e)
-    {
-        System.out.println("Resource error: " + e.getMessage());
-    }
+        try (BankResource resource = new BankResource()) {
+            resource.useResource();
+        } catch (Exception e) {
+            System.out.println("Resource error: " + e.getMessage());
+        }
+
         System.out.println("\n--- Insufficient funds test ---");
 
         Account testAccount =
             new SavingsAccount("AC0089", "Test", 1000, 0);
 
-        try
-        {
+        try {
             testAccount.withdraw(5000);
-        }
-        catch (InsufficientFundsException e)
-        {
+
+        } catch (InsufficientFundsException e) {
             System.out.println(e.getMessage());
             System.out.println("Shortfall: " + e.getShortfall());
             System.out.println("Balance remains: "
                 + testAccount.getBalance());
-        }
-        catch (BankException e)
-        {
+
+        } catch (BankException e) {
             System.out.println(e.getMessage());
-        }
-        finally
-        {
+
+        } finally {
             System.out.println("Practical 8 test completed.");
         }
     }
-    
-public static void testPractical9()
-{
-    System.out.println("\n===== PRACTICAL 9 TESTS =====");
 
-    Account account =
-        new SavingsAccount("AC0090", "Thread Test", 0, 0);
+    public static void testPractical9() {
+        System.out.println("\n===== PRACTICAL 9 TESTS =====");
 
-    int numberOfThreads = 10;
-    int depositsPerThread = 1000;
-    long amount = 1;
+        Account account =
+            new SavingsAccount("AC0090", "Thread Test", 0, 0);
 
-    Thread[] threads = new Thread[numberOfThreads];
+        int numberOfThreads = 10;
+        int depositsPerThread = 1000;
+        long amount = 1;
 
-    for (int i = 0; i < numberOfThreads; i++)
-    {
-        AccountWorker worker =
-            new AccountWorker(account, depositsPerThread, amount);
+        Thread[] threads = new Thread[numberOfThreads];
 
-        threads[i] = new Thread(worker, "Worker-" + (i + 1));
-        threads[i].start();
-    }
+        for (int i = 0; i < numberOfThreads; i++) {
+            AccountWorker worker =
+                new AccountWorker(account, depositsPerThread, amount);
 
-    for (int i = 0; i < numberOfThreads; i++)
-    {
-        try
-        {
-            threads[i].join();
+            threads[i] = new Thread(worker, "Worker-" + (i + 1));
+            threads[i].start();
         }
-        catch (InterruptedException e)
-        {
-            Thread.currentThread().interrupt();
-            System.out.println("Thread was interrupted.");
-            return;
-        }
-    }
 
-    System.out.println("Expected balance: 10000");
-    System.out.println("Actual balance: " + account.getBalance());
+        for (int i = 0; i < numberOfThreads; i++) {
+            try {
+                threads[i].join();
 
-    if (account.getBalance() == 10000)
-    {
-        System.out.println("Test passed!");
-    }
-    else
-    {
-        System.out.println("Test failed!");
-    }
-}
-
-public static void testPractical10()
-{
-    System.out.println("\n===== PRACTICAL 10 TESTS =====");
-
-    
-    System.out.println("\n--- Thread Pool Test ---");
-
-    TransactionProcessor processor = new TransactionProcessor();
-
-    for (int i = 1; i <= 10; i++)
-    {
-        final int taskId = i;
-
-        processor.submit(() ->
-        {
-            System.out.println(
-                "Task " + taskId + " executed by "
-                + Thread.currentThread().getName()
-            );
-
-            try
-            {
-                Thread.sleep(200);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                System.out.println("Thread was interrupted.");
+                return;
             }
-            catch (InterruptedException e)
-            {
+        }
+
+        System.out.println("Expected balance: 10000");
+        System.out.println("Actual balance: " + account.getBalance());
+
+        if (account.getBalance() == 10000) {
+            System.out.println("Test passed!");
+        } else {
+            System.out.println("Test failed!");
+        }
+    }
+
+    public static void testPractical10() {
+        System.out.println("\n===== PRACTICAL 10 TESTS =====");
+        System.out.println("\n--- Thread Pool Test ---");
+
+        TransactionProcessor processor = new TransactionProcessor();
+
+        for (int i = 1; i <= 10; i++) {
+            final int taskId = i;
+
+            processor.submit(() -> {
+                System.out.println(
+                    "Task " + taskId + " executed by "
+                    + Thread.currentThread().getName()
+                );
+
+                try {
+                    Thread.sleep(200);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            });
+        }
+
+        processor.stop();
+
+        System.out.println("All thread-pool tasks completed.");
+        System.out.println("\n--- Producer-Consumer Test ---");
+
+        TransactionBuffer buffer = new TransactionBuffer();
+        int totalTransactions = 10;
+
+        Thread producer = new Thread(() -> {
+            try {
+                for (int i = 1; i <= totalTransactions; i++) {
+                    buffer.add("TXN-" + i);
+                }
+            } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
-        });
-    }
+        }, "Producer");
 
-    processor.stop();
-
-    System.out.println("All thread-pool tasks completed.");
-
-  
-    System.out.println("\n--- Producer-Consumer Test ---");
-
-    TransactionBuffer buffer = new TransactionBuffer();
-    int totalTransactions = 10;
-
-    Thread producer = new Thread(() ->
-    {
-        try
-        {
-            for (int i = 1; i <= totalTransactions; i++)
-            {
-                buffer.add("TXN-" + i);
+        Thread consumer = new Thread(() -> {
+            try {
+                for (int i = 1; i <= totalTransactions; i++) {
+                    buffer.take();
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
             }
-        }
-        catch (InterruptedException e)
-        {
-            Thread.currentThread().interrupt();
-        }
-    }, "Producer");
+        }, "Consumer");
 
-    Thread consumer = new Thread(() ->
-    {
-        try
-        {
-            for (int i = 1; i <= totalTransactions; i++)
-            {
-                buffer.take();
+        producer.start();
+        consumer.start();
+
+        try {
+            producer.join();
+            consumer.join();
+
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            System.out.println("Producer-consumer test interrupted.");
+            return;
+        }
+
+        System.out.println("All transactions processed.");
+        DeadlockDemo.runTests();
+    }
+
+    public static void testPractical11() {
+        System.out.println("\n===== PRACTICAL 11 TESTS =====");
+
+        Path accountsFile = Path.of("accounts.dat");
+        Path logsDirectory = Path.of("logs");
+        Path reportFile = Path.of("report.txt");
+
+        try {
+            
+            System.out.println("\n--- Save Accounts ---");
+
+            Account[] accountsToSave =
+                Arrays.copyOf(accounts, accountCount);
+
+            StatePersister.save(accountsToSave, accountsFile);
+
+         
+            System.out.println("\n--- Load Accounts ---");
+
+            Account[] loadedAccounts =
+                StatePersister.load(accountsFile);
+
+            for (Account account : loadedAccounts) {
+                System.out.println(account);
             }
+
+            java.nio.file.Files.createDirectories(logsDirectory);
+
+        
+            System.out.println("\n--- Transaction Report ---");
+
+            String report = ReportGenerator.generate(
+                logsDirectory, reportFile
+            );
+
+            System.out.println(report);
+            System.out.println(
+                "\nReport saved to: " + reportFile.toAbsolutePath()
+            );
+
+        } catch (IOException | ClassNotFoundException e) {
+            System.out.println(
+                "Practical 11 error: " + e.getMessage()
+            );
+            e.printStackTrace();
         }
-        catch (InterruptedException e)
-        {
-            Thread.currentThread().interrupt();
-        }
-    }, "Consumer");
-
-    producer.start();
-    consumer.start();
-
-    try
-    {
-        producer.join();
-        consumer.join();
     }
-    catch (InterruptedException e)
-    {
-        Thread.currentThread().interrupt();
-        System.out.println("Producer-consumer test interrupted.");
-        return;
-    }
-
-    System.out.println("All transactions processed.");
-    DeadlockDemo.runTests();
-}
-
 }

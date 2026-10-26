@@ -1,173 +1,149 @@
 
 package model;
 
-import exception.AccountNotFoundException;
 import exception.BankException;
 import exception.InsufficientFundsException;
 import exception.InvalidAmountException;
-import java.util.Objects;
-import model.annotation.Id;
-import model.annotation.Positive;
+import java.io.Serializable;
 
-public abstract class Account implements Transactable, InterestBearing
-{
-    @Id
+public class Account implements Serializable {
+
+    private static final long serialVersionUID = 1L;
+
     private final String accountNumber;
-
-    private final String ownerName;
-
-    @Positive
+    private String ownerName;
     private long balance;
-
     private boolean active;
 
-    public Account(String accountNumber, String ownerName, long balance)
-    {
+    public Account(String accountNumber, String ownerName, long balance) {
         this.accountNumber = accountNumber;
         this.ownerName = ownerName;
         this.balance = balance;
         this.active = true;
     }
 
-    public String getAccountNumber()
-    {
+    public String getAccountNumber() {
         return accountNumber;
     }
 
-    public String getOwnerName()
-    {
+    public String getOwnerName() {
         return ownerName;
     }
 
-    public synchronized long getBalance()
-    {
+    public void setOwnerName(String ownerName) {
+        this.ownerName = ownerName;
+    }
+
+    public synchronized long getBalance() {
         return balance;
     }
 
-    public boolean isActive()
-    {
+    public synchronized boolean isActive() {
         return active;
     }
 
-    public void setActive(boolean active)
-    {
+    public synchronized void setActive(boolean active) {
         this.active = active;
     }
 
-    @Override
     public synchronized void deposit(long amount)
-        throws InvalidAmountException
-    {
-        if (amount <= 0)
-        {
-            throw new InvalidAmountException(
-                "Deposit amount must be greater than zero."
-            );
-        }
+            throws InvalidAmountException {
 
-        if (!active)
-        {
+        if (amount <= 0) {
             throw new InvalidAmountException(
-                "Cannot deposit into an inactive account."
+                "Amount must be greater than zero."
             );
         }
 
         balance += amount;
     }
 
-    @Override
-    public synchronized void withdraw(long amount)
-        throws InsufficientFundsException, InvalidAmountException
-    {
-        if (amount <= 0)
-        {
+    public synchronized boolean canWithdraw(long amount) {
+        return amount > 0 && amount <= balance;
+    }
+
+    public synchronized boolean withdraw(long amount)
+            throws InsufficientFundsException, InvalidAmountException {
+
+        if (amount <= 0) {
             throw new InvalidAmountException(
-                "Withdrawal amount must be greater than zero."
+                "Amount must be greater than zero."
             );
         }
 
-        if (!active)
-        {
-            throw new InvalidAmountException(
-                "Cannot withdraw from an inactive account."
-            );
-        }
-
-        if (amount > balance)
-        {
+        if (amount > balance) {
             throw new InsufficientFundsException(amount - balance);
         }
 
         balance -= amount;
+        return true;
     }
 
-    public void transfer(Account to, long amount) throws BankException
-    {
-        try
-        {
-            if (to == null)
-            {
-                throw new AccountNotFoundException("Receiver account");
-            }
+    public void transfer(Account receiver, long amount)
+            throws BankException {
 
-            if (this.equals(to))
-            {
-                throw new InvalidAmountException(
-                    "Cannot transfer to the same account."
-                );
-            }
-
-            withdraw(amount);
-            to.deposit(amount);
-
-            System.out.println("Transfer completed successfully.");
+        if (receiver == null) {
+            throw new BankException("Receiver account not found.");
         }
-        catch (BankException e)
-        {
-            System.out.println("Transfer failed: " + e.getMessage());
-            throw e;
+
+        if (receiver == this) {
+            throw new BankException(
+                "Cannot transfer to the same account."
+            );
         }
-        finally
-        {
-            System.out.println("Transfer attempt completed.");
+
+        if (amount <= 0) {
+            throw new InvalidAmountException(
+                "Amount must be greater than zero."
+            );
+        }
+
+        synchronized (this) {
+            synchronized (receiver) {
+                if (amount > balance) {
+                    throw new InsufficientFundsException(
+                        amount - balance
+                    );
+                }
+
+                balance -= amount;
+                receiver.balance += amount;
+            }
         }
     }
 
-    public double yearlyInterest()
-    {
-        return getBalance() * interestRate() / 100.0;
+    public double interestRate() {
+        return 0.0;
+    }
+
+    public double yearlyInterest() {
+        return getBalance() * interestRate() / 100;
     }
 
     @Override
-    public boolean equals(Object obj)
-    {
-        if (this == obj)
-        {
+    public String toString() {
+        return accountNumber + " | " + ownerName + " | " + balance
+                + " | Active: " + active
+                + " | Rate: " + interestRate() + "%"
+                + " | Yearly interest: Rs. " + yearlyInterest();
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
             return true;
         }
 
-        if (!(obj instanceof Account))
-        {
+        if (!(obj instanceof Account)) {
             return false;
         }
 
         Account other = (Account) obj;
-
-        return Objects.equals(accountNumber, other.accountNumber);
+        return accountNumber.equals(other.accountNumber);
     }
 
     @Override
-    public int hashCode()
-    {
-        return Objects.hash(accountNumber);
-    }
-
-    @Override
-    public String toString()
-    {
-        return "Account No: " + accountNumber
-            + " | Owner: " + ownerName
-            + " | Balance: Rs. " + getBalance()
-            + " | Status: " + (active ? "Active" : "Inactive");
+    public int hashCode() {
+        return accountNumber.hashCode();
     }
 }

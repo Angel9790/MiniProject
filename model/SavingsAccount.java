@@ -1,21 +1,35 @@
+
 package model;
 
-public class SavingsAccount extends Account implements Premium {
-    private long minBalance;
+import exception.BankException;
+import exception.InsufficientFundsException;
+import exception.InvalidAmountException;
+
+public class SavingsAccount extends Account {
+
+    private double rate;
 
     public SavingsAccount(String accountNumber, String ownerName,
-                          long balance, long minBalance) {
+                          long balance, double rate) {
         super(accountNumber, ownerName, balance);
-        this.minBalance = minBalance;
+        this.rate = rate;
     }
 
-    @Override
-    public double interestRate() {
-        return 4.0;
-    }
+ 
 
     @Override
-    public boolean canWithdraw(long amount) {
-        return getBalance() - amount >= minBalance;
-    }
+public String toString() {
+    return super.toString()
+            + " | Rate: " + interestRate() + "%"
+            + " | Yearly interest: Rs. " + yearlyInterest();
+}
+@Override
+public double interestRate() {
+    return rate;
+}
+
+@Override
+public double yearlyInterest() {
+    return getBalance() * interestRate() / 100;
+}
 }
