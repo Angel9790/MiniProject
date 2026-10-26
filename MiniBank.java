@@ -13,6 +13,9 @@ import model.SavingsAccount;
 import service.AccountWorker;
 import service.AnnotationValidator;
 import service.BankResource;
+import service.DeadlockDemo;
+import service.TransactionBuffer;
+import service.TransactionProcessor;
 import util.Command;
 import util.CommandParser;
 import util.StatementFormatter;
@@ -79,6 +82,7 @@ public class MiniBank
         testPractical7();
         testPractical8();
         testPractical9();
+        testPractical10();
 
         int choice = 0;
 
@@ -591,6 +595,96 @@ public static void testPractical9()
     {
         System.out.println("Test failed!");
     }
+}
+
+public static void testPractical10()
+{
+    System.out.println("\n===== PRACTICAL 10 TESTS =====");
+
+    
+    System.out.println("\n--- Thread Pool Test ---");
+
+    TransactionProcessor processor = new TransactionProcessor();
+
+    for (int i = 1; i <= 10; i++)
+    {
+        final int taskId = i;
+
+        processor.submit(() ->
+        {
+            System.out.println(
+                "Task " + taskId + " executed by "
+                + Thread.currentThread().getName()
+            );
+
+            try
+            {
+                Thread.sleep(200);
+            }
+            catch (InterruptedException e)
+            {
+                Thread.currentThread().interrupt();
+            }
+        });
+    }
+
+    processor.stop();
+
+    System.out.println("All thread-pool tasks completed.");
+
+  
+    System.out.println("\n--- Producer-Consumer Test ---");
+
+    TransactionBuffer buffer = new TransactionBuffer();
+    int totalTransactions = 10;
+
+    Thread producer = new Thread(() ->
+    {
+        try
+        {
+            for (int i = 1; i <= totalTransactions; i++)
+            {
+                buffer.add("TXN-" + i);
+            }
+        }
+        catch (InterruptedException e)
+        {
+            Thread.currentThread().interrupt();
+        }
+    }, "Producer");
+
+    Thread consumer = new Thread(() ->
+    {
+        try
+        {
+            for (int i = 1; i <= totalTransactions; i++)
+            {
+                buffer.take();
+            }
+        }
+        catch (InterruptedException e)
+        {
+            Thread.currentThread().interrupt();
+        }
+    }, "Consumer");
+
+    producer.start();
+    consumer.start();
+
+    try
+    {
+        producer.join();
+        consumer.join();
+    }
+    catch (InterruptedException e)
+    {
+        Thread.currentThread().interrupt();
+        System.out.println("Producer-consumer test interrupted.");
+        return;
+    }
+
+    System.out.println("All transactions processed.");
+    DeadlockDemo.runTests();
 }
 
 }
