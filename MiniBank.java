@@ -5,6 +5,7 @@ import model.CurrentAccount;
 import model.Customer;
 import model.FixedDepositAccount;
 import model.SavingsAccount;
+import service.AnnotationValidator;
 import util.Command;
 import util.CommandParser;
 import util.StatementFormatter;
@@ -67,6 +68,7 @@ public class MiniBank
         testPractical3();
         testPractical4();
         testPractical6();
+        testPractical7();
 
         int choice;
 
@@ -263,12 +265,12 @@ public class MiniBank
         System.out.println("Accounts equal: " + a1.equals(a2));
 
         System.out.println("Same hash code: "
-                + (a1.hashCode() == a2.hashCode()));
+            + (a1.hashCode() == a2.hashCode()));
 
         Object obj = a1;
 
         System.out.println("Is Account: "
-                + (obj instanceof Account));
+            + (obj instanceof Account));
 
         Customer.Address address = new Customer.Address(
             "Main Road", "Anand", "388001"
@@ -287,10 +289,10 @@ public class MiniBank
         System.out.println("Cloned ID: " + c2.getCustomerId());
 
         System.out.println("Different customer objects: "
-                + (c1 != c2));
+            + (c1 != c2));
 
         System.out.println("Different address objects: "
-                + (c1.getAddress() != c2.getAddress()));
+            + (c1.getAddress() != c2.getAddress()));
     }
 
     public static void testPractical4()
@@ -298,29 +300,28 @@ public class MiniBank
         System.out.println("\n===== PRACTICAL 4 TESTS =====");
 
         System.out.println("Valid mobile: "
-                + Validator.isValidMobile("9876543210"));
+            + Validator.isValidMobile("9876543210"));
 
         System.out.println("Invalid mobile: "
-                + Validator.isValidMobile("12345"));
+            + Validator.isValidMobile("12345"));
 
-        // Static import: no Validator class name needed
         System.out.println("Valid email: "
-                + isValidEmail("angel@example.com"));
+            + isValidEmail("angel@example.com"));
 
         System.out.println("Invalid email: "
-                + isValidEmail("angel@"));
+            + isValidEmail("angel@"));
 
         System.out.println("Valid PAN: "
-                + Validator.isValidPan("ABCDE1234F"));
+            + Validator.isValidPan("ABCDE1234F"));
 
         System.out.println("Invalid PAN: "
-                + Validator.isValidPan("ABC123"));
+            + Validator.isValidPan("ABC123"));
 
         System.out.println("Valid IFSC: "
-                + Validator.isValidIfsc("SBIN0001234"));
+            + Validator.isValidIfsc("SBIN0001234"));
 
         System.out.println("Invalid IFSC: "
-                + Validator.isValidIfsc("123"));
+            + Validator.isValidIfsc("123"));
 
         System.out.println("\n--- Command Parser Test ---");
 
@@ -331,7 +332,7 @@ public class MiniBank
 
             System.out.println("Command type: " + command.type());
             System.out.println("Account number: "
-                    + command.accountNumber());
+                + command.accountNumber());
             System.out.println("Amount: " + command.amount());
         }
         catch (IllegalArgumentException e)
@@ -349,59 +350,78 @@ public class MiniBank
         }
     }
 
-  
-public static void testPractical6()
-{
-    System.out.println("\n===== PRACTICAL 6 TESTS =====");
-
-    Account account =
-        new SavingsAccount("AC0088", "Test", 10000, 1000);
-
-    // Anonymous class
-    WithdrawRule rule1 = new WithdrawRule()
+    public static void testPractical6()
     {
-        @Override
-        public boolean allow(Account account, long amount)
+        System.out.println("\n===== PRACTICAL 6 TESTS =====");
+
+        Account account =
+            new SavingsAccount("AC0088", "Test", 10000, 1000);
+
+        WithdrawRule rule1 = new WithdrawRule()
         {
-            return amount > 0
-                && account.getBalance() - amount >= 1000;
+            @Override
+            public boolean allow(Account account, long amount)
+            {
+                return amount > 0
+                    && account.getBalance() - amount >= 1000;
+            }
+        };
+
+        WithdrawRule rule2 =
+            (acc, amount) -> amount > 0
+                && acc.getBalance() - amount >= 1000;
+
+        System.out.println("Anonymous class result: "
+            + rule1.allow(account, 2000));
+
+        System.out.println("Lambda result: "
+            + rule2.allow(account, 2000));
+
+        System.out.println("\n--- Interest Rates ---");
+
+        Account[] testAccounts = {
+            new SavingsAccount("AC0001", "Angel", 1300, 500),
+            new CurrentAccount("AC0002", "Riya", 700, 1000),
+            new FixedDepositAccount("AC0003", "Arav", 2500)
+        };
+
+        for (Account acc : testAccounts)
+        {
+            System.out.println(
+                acc.getOwnerName()
+                + " | Rate: " + acc.interestRate() + "%"
+                + " | Yearly interest: Rs. "
+                + acc.yearlyInterest()
+            );
         }
-    };
 
-    // Lambda expression
-    WithdrawRule rule2 =
-        (acc, amount) -> amount > 0
-            && acc.getBalance() - amount >= 1000;
-
-    System.out.println("Anonymous class result: "
-        + rule1.allow(account, 2000));
-
-    System.out.println("Lambda result: "
-        + rule2.allow(account, 2000));
-
-    System.out.println("\n--- Interest Rates ---");
-
-    Account[] testAccounts = {
-        new SavingsAccount("AC0001", "Angel", 1300, 500),
-        new CurrentAccount("AC0002", "Riya", 700, 1000),
-        new FixedDepositAccount("AC0003", "Arav", 2500)
-    };
-
-    for (Account acc : testAccounts)
-    {
-        System.out.println(
-            acc.getOwnerName()
-            + " | Rate: " + acc.interestRate() + "%"
-            + " | Yearly interest: Rs. "
-            + acc.yearlyInterest()
-        );
+        if (account instanceof SavingsAccount)
+        {
+            System.out.println("Savings account detected.");
+        }
     }
 
-    if (account instanceof SavingsAccount)
+    public static void testPractical7()
     {
-        System.out.println("Savings account detected.");
+        System.out.println("\n===== PRACTICAL 7 TESTS =====");
+        System.out.println("--- Annotation Validation ---");
+
+        // Create an account with a negative balance for testing.
+        Account testAccount =
+            new SavingsAccount("AC0099", "Test", -500, 1000);
+
+        String[] errors = AnnotationValidator.validate(testAccount);
+
+        if (errors.length == 0)
+        {
+            System.out.println("No validation errors found.");
+        }
+        else
+        {
+            for (String error : errors)
+            {
+                System.out.println("Validation error: " + error);
+            }
+        }
     }
 }
-
-    }
-
