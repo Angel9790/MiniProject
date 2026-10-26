@@ -10,6 +10,7 @@ import model.CurrentAccount;
 import model.Customer;
 import model.FixedDepositAccount;
 import model.SavingsAccount;
+import service.AccountWorker;
 import service.AnnotationValidator;
 import service.BankResource;
 import util.Command;
@@ -41,6 +42,7 @@ public class MiniBank
 
     static int customerCount = 0;
     static int accountCount = 0;
+    
 
     public static void main(String[] args)
     {
@@ -76,6 +78,7 @@ public class MiniBank
         testPractical6();
         testPractical7();
         testPractical8();
+        testPractical9();
 
         int choice = 0;
 
@@ -540,4 +543,54 @@ public class MiniBank
             System.out.println("Practical 8 test completed.");
         }
     }
+    
+public static void testPractical9()
+{
+    System.out.println("\n===== PRACTICAL 9 TESTS =====");
+
+    Account account =
+        new SavingsAccount("AC0090", "Thread Test", 0, 0);
+
+    int numberOfThreads = 10;
+    int depositsPerThread = 1000;
+    long amount = 1;
+
+    Thread[] threads = new Thread[numberOfThreads];
+
+    for (int i = 0; i < numberOfThreads; i++)
+    {
+        AccountWorker worker =
+            new AccountWorker(account, depositsPerThread, amount);
+
+        threads[i] = new Thread(worker, "Worker-" + (i + 1));
+        threads[i].start();
+    }
+
+    for (int i = 0; i < numberOfThreads; i++)
+    {
+        try
+        {
+            threads[i].join();
+        }
+        catch (InterruptedException e)
+        {
+            Thread.currentThread().interrupt();
+            System.out.println("Thread was interrupted.");
+            return;
+        }
+    }
+
+    System.out.println("Expected balance: 10000");
+    System.out.println("Actual balance: " + account.getBalance());
+
+    if (account.getBalance() == 10000)
+    {
+        System.out.println("Test passed!");
+    }
+    else
+    {
+        System.out.println("Test failed!");
+    }
+}
+
 }

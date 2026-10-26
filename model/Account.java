@@ -39,7 +39,7 @@ public abstract class Account implements Transactable, InterestBearing
         return ownerName;
     }
 
-    public long getBalance()
+    public synchronized long getBalance()
     {
         return balance;
     }
@@ -55,7 +55,8 @@ public abstract class Account implements Transactable, InterestBearing
     }
 
     @Override
-    public void deposit(long amount) throws InvalidAmountException
+    public synchronized void deposit(long amount)
+        throws InvalidAmountException
     {
         if (amount <= 0)
         {
@@ -75,7 +76,7 @@ public abstract class Account implements Transactable, InterestBearing
     }
 
     @Override
-    public void withdraw(long amount)
+    public synchronized void withdraw(long amount)
         throws InsufficientFundsException, InvalidAmountException
     {
         if (amount <= 0)
@@ -166,7 +167,7 @@ public abstract class Account implements Transactable, InterestBearing
     {
         return "Account No: " + accountNumber
             + " | Owner: " + ownerName
-            + " | Balance: Rs. " + balance
+            + " | Balance: Rs. " + getBalance()
             + " | Status: " + (active ? "Active" : "Inactive");
     }
 }
