@@ -1,5 +1,16 @@
 
 import java.util.Scanner;
+import model.Account;
+import model.CurrentAccount;
+import model.Customer;
+import model.FixedDepositAccount;
+import model.SavingsAccount;
+import util.Command;
+import util.CommandParser;
+import util.StatementFormatter;
+import util.Validator;
+import static util.Validator.isValidEmail;
+import util.WithdrawRule;
 
 record BankInfo(String name, String branch)
 {
@@ -44,12 +55,18 @@ public class MiniBank
         customers[customerCount++] = c1;
         customers[customerCount++] = c2;
 
-        accounts[accountCount++] = new Account("Angel", 1300);
-        accounts[accountCount++] = new Account("Riya", 700);
-        accounts[accountCount++] = new Account("Arav", 2500);
+        accounts[accountCount++] =
+            new SavingsAccount("AC0001", "Angel", 1300, 500);
+
+        accounts[accountCount++] =
+            new CurrentAccount("AC0002", "Riya", 700, 1000);
+
+        accounts[accountCount++] =
+            new FixedDepositAccount("AC0003", "Arav", 2500);
 
         testPractical3();
         testPractical4();
+        testPractical6();
 
         int choice;
 
@@ -236,11 +253,13 @@ public class MiniBank
     {
         System.out.println("\n===== PRACTICAL 3 TESTS =====");
 
-        Account a1 = new Account("AC0099", "Riya", 4000);
-        Account a2 = new Account("AC0099", "Riya", 4000);
+        Account a1 =
+            new SavingsAccount("AC0099", "Riya", 4000, 0);
+
+        Account a2 =
+            new SavingsAccount("AC0099", "Riya", 4000, 0);
 
         System.out.println("Account: " + a1);
-
         System.out.println("Accounts equal: " + a1.equals(a2));
 
         System.out.println("Same hash code: "
@@ -284,11 +303,12 @@ public class MiniBank
         System.out.println("Invalid mobile: "
                 + Validator.isValidMobile("12345"));
 
+        // Static import: no Validator class name needed
         System.out.println("Valid email: "
-                + Validator.isValidEmail("angel@example.com"));
+                + isValidEmail("angel@example.com"));
 
         System.out.println("Invalid email: "
-                + Validator.isValidEmail("angel@"));
+                + isValidEmail("angel@"));
 
         System.out.println("Valid PAN: "
                 + Validator.isValidPan("ABCDE1234F"));
@@ -328,4 +348,60 @@ public class MiniBank
             );
         }
     }
+
+  
+public static void testPractical6()
+{
+    System.out.println("\n===== PRACTICAL 6 TESTS =====");
+
+    Account account =
+        new SavingsAccount("AC0088", "Test", 10000, 1000);
+
+    // Anonymous class
+    WithdrawRule rule1 = new WithdrawRule()
+    {
+        @Override
+        public boolean allow(Account account, long amount)
+        {
+            return amount > 0
+                && account.getBalance() - amount >= 1000;
+        }
+    };
+
+    // Lambda expression
+    WithdrawRule rule2 =
+        (acc, amount) -> amount > 0
+            && acc.getBalance() - amount >= 1000;
+
+    System.out.println("Anonymous class result: "
+        + rule1.allow(account, 2000));
+
+    System.out.println("Lambda result: "
+        + rule2.allow(account, 2000));
+
+    System.out.println("\n--- Interest Rates ---");
+
+    Account[] testAccounts = {
+        new SavingsAccount("AC0001", "Angel", 1300, 500),
+        new CurrentAccount("AC0002", "Riya", 700, 1000),
+        new FixedDepositAccount("AC0003", "Arav", 2500)
+    };
+
+    for (Account acc : testAccounts)
+    {
+        System.out.println(
+            acc.getOwnerName()
+            + " | Rate: " + acc.interestRate() + "%"
+            + " | Yearly interest: Rs. "
+            + acc.yearlyInterest()
+        );
+    }
+
+    if (account instanceof SavingsAccount)
+    {
+        System.out.println("Savings account detected.");
+    }
 }
+
+    }
+
