@@ -49,6 +49,7 @@ public class MiniBank
         accounts[accountCount++] = new Account("Arav", 2500);
 
         testPractical3();
+        testPractical4();
 
         int choice;
 
@@ -179,9 +180,10 @@ public class MiniBank
             System.out.print("Enter transfer amount: ");
             long amount = sc.nextLong();
 
-            if (sender.withdraw(amount))
+            if (amount > 0 && sender.withdraw(amount))
             {
                 receiver.deposit(amount);
+
                 System.out.println("Transfer successful!");
                 System.out.println("Sender: " + sender);
                 System.out.println("Receiver: " + receiver);
@@ -218,14 +220,15 @@ public class MiniBank
         Account a2 = new Account("AC0099", "Riya", 4000);
 
         System.out.println("Account: " + a1);
-
         System.out.println("Accounts equal: " + a1.equals(a2));
 
         System.out.println("Same hash code: "
                 + (a1.hashCode() == a2.hashCode()));
 
         Object obj = a1;
-        System.out.println("Is Account: " + (obj instanceof Account));
+
+        System.out.println("Is Account: "
+                + (obj instanceof Account));
 
         Customer.Address address = new Customer.Address(
             "Main Road", "Anand", "388001"
@@ -249,4 +252,57 @@ public class MiniBank
         System.out.println("Different address objects: "
                 + (c1.getAddress() != c2.getAddress()));
     }
+
+    
+    public static void testPractical4()
+    {
+        System.out.println("\n===== PRACTICAL 4 TESTS =====");
+
+        System.out.println("Valid mobile: "
+                + Validator.isValidMobile("9876543210"));
+        System.out.println("Invalid mobile: "
+                + Validator.isValidMobile("12345"));
+
+        System.out.println("Valid email: "
+                + Validator.isValidEmail("angel@example.com"));
+        System.out.println("Invalid email: "
+                + Validator.isValidEmail("angel@"));
+
+        System.out.println("Valid PAN: "
+                + Validator.isValidPan("ABCDE1234F"));
+        System.out.println("Invalid PAN: "
+                + Validator.isValidPan("ABC123"));
+
+        System.out.println("Valid IFSC: "
+                + Validator.isValidIfsc("SBIN0001234"));
+        System.out.println("Invalid IFSC: "
+                + Validator.isValidIfsc("123"));
+
+        System.out.println("\n--- Command Parser Test ---");
+
+        try
+        {
+            Command command =
+                    CommandParser.parse("DEPOSIT AC0001 500");
+
+            System.out.println("Command type: " + command.type());
+            System.out.println("Account number: "
+                    + command.accountNumber());
+            System.out.println("Amount: " + command.amount());
+        }
+        catch (IllegalArgumentException e)
+        {
+            System.out.println("Error: " + e.getMessage());
+        }
+
+        System.out.println("\n--- Account Statement ---");
+
+        if (accountCount > 0)
+        {
+            System.out.println(
+                    StatementFormatter.buildStatement(accounts[0]));
+        }
+    }
 }
+
+
