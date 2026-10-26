@@ -6,7 +6,7 @@ import exception.InsufficientFundsException;
 import exception.InvalidAmountException;
 import java.io.Serializable;
 
-public class Account implements Serializable {
+public class Account implements Serializable, Comparable<Account> {
 
     private static final long serialVersionUID = 1L;
 
@@ -121,8 +121,13 @@ public class Account implements Serializable {
     }
 
     @Override
+    public int compareTo(Account other) {
+        return this.accountNumber.compareTo(other.accountNumber);
+    }
+
+    @Override
     public String toString() {
-        return accountNumber + " | " + ownerName + " | " + balance
+        return accountNumber + " | " + ownerName + " | " + getBalance()
                 + " | Active: " + active
                 + " | Rate: " + interestRate() + "%"
                 + " | Yearly interest: Rs. " + yearlyInterest();

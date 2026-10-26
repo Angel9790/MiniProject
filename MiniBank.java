@@ -3,19 +3,17 @@ import exception.AccountNotFoundException;
 import exception.BankException;
 import exception.InsufficientFundsException;
 import exception.InvalidAmountException;
-
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.InputMismatchException;
 import java.util.Scanner;
-
 import model.Account;
+import model.AccountStore;
 import model.CurrentAccount;
 import model.Customer;
 import model.FixedDepositAccount;
 import model.SavingsAccount;
-
 import service.AccountWorker;
 import service.AnnotationValidator;
 import service.BankResource;
@@ -25,14 +23,12 @@ import service.StatePersister;
 import service.TransactionBuffer;
 import service.TransactionLog;
 import service.TransactionProcessor;
-
 import util.Command;
 import util.CommandParser;
 import util.StatementFormatter;
 import util.Validator;
-import util.WithdrawRule;
-
 import static util.Validator.isValidEmail;
+import util.WithdrawRule;
 
 record BankInfo(String name, String branch) {
 }
@@ -88,6 +84,7 @@ public class MiniBank {
         testPractical9();
         testPractical10();
         testPractical11();
+        testPractical12();
 
         int choice = 0;
 
@@ -167,7 +164,7 @@ public class MiniBank {
         }
     }
 
-    // PRACTICAL 11: Record a transaction in the log file
+   
     public static void logTransaction(
             String type, long amount, String accountNumber) {
 
@@ -686,4 +683,76 @@ public class MiniBank {
             e.printStackTrace();
         }
     }
+    
+private static void testPractical12() {
+
+    System.out.println("\n===== PRACTICAL 12 TESTS =====");
+
+    AccountStore store = new AccountStore();
+
+    Account a1 = new Account("AC0001", "Angel", 5000);
+    Account a2 = new Account("AC0002", "Riya", 2000);
+    Account a3 = new Account("AC0003", "Arav", 9000);
+
+    store.add(a1);
+    store.add(a2);
+    store.add(a3);
+
+    System.out.println("\n--- Account Lookup ---");
+    System.out.println("Found account: " + store.get("AC0002"));
+
+    System.out.println("\n--- Accounts Sorted by Balance ---");
+    for (Account acc : store.sortedByBalance()) {
+        System.out.println(acc.getAccountNumber()
+                + " | " + acc.getOwnerName()
+                + " | Balance: Rs. " + acc.getBalance());
+    }
+
+    System.out.println("\n--- Comparable Test ---");
+    System.out.println(
+        "AC0001 compared with AC0002: "
+        + a1.compareTo(a2)
+    );
+
+    System.out.println("\n--- Transaction History ---");
+    store.addTransaction("DEPOSIT | AC0001 | 500");
+    store.addTransaction("WITHDRAW | AC0002 | 200");
+
+    for (String transaction : store.getTransactionHistory()) {
+        System.out.println(transaction);
+    }
+
+    System.out.println("\n--- ConcurrentHashMap Test ---");
+
+    TransactionProcessor processor = new TransactionProcessor();
+
+    processor.addAccount(a1);
+    processor.addAccount(a2);
+    processor.addAccount(a3);
+
+    System.out.println(
+        "Shared account found: "
+        + processor.getAccount("AC0003").getAccountNumber()
+    );
+
+    for (int i = 0; i < 10; i++) {
+        processor.submit(() -> {
+            try {
+                a1.deposit(100);
+            } catch (Exception e) {
+                System.out.println("Deposit failed: " + e.getMessage());
+            }
+        });
+    }
+
+    processor.stop();
+
+    System.out.println(
+        "Balance after 10 deposits of Rs. 100: Rs. "
+        + a1.getBalance()
+    );
+
+    System.out.println("Practical 12 completed.");
+}
+
 }
