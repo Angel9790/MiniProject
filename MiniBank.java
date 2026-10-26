@@ -1,4 +1,9 @@
 
+import exception.AccountNotFoundException;
+import exception.BankException;
+import exception.InsufficientFundsException;
+import exception.InvalidAmountException;
+import java.util.InputMismatchException;
 import java.util.Scanner;
 import model.Account;
 import model.CurrentAccount;
@@ -6,6 +11,7 @@ import model.Customer;
 import model.FixedDepositAccount;
 import model.SavingsAccount;
 import service.AnnotationValidator;
+import service.BankResource;
 import util.Command;
 import util.CommandParser;
 import util.StatementFormatter;
@@ -69,8 +75,9 @@ public class MiniBank
         testPractical4();
         testPractical6();
         testPractical7();
+        testPractical8();
 
-        int choice;
+        int choice = 0;
 
         do
         {
@@ -79,56 +86,74 @@ public class MiniBank
             System.out.println("2. Deposit");
             System.out.println("3. Withdraw");
             System.out.println("4. Transfer");
-            System.out.println("5. Exit");
+            System.out.println("5. Display Accounts");
+            System.out.println("6. Exit");
             System.out.print("Enter your choice: ");
 
-            choice = sc.nextInt();
+            try
+            {
+                choice = sc.nextInt();
 
-            MenuOption selected = switch (choice)
-            {
-                case 1 -> MenuOption.OPEN_ACCOUNT;
-                case 2 -> MenuOption.DEPOSIT;
-                case 3 -> MenuOption.WITHDRAW;
-                case 4 -> MenuOption.TRANSFER;
-                case 5 -> MenuOption.EXIT;
-                default -> null;
-            };
-
-            if (selected == null)
-            {
-                System.out.println("Invalid choice!");
-            }
-            else
-            {
-                switch (selected)
+                MenuOption selected = switch (choice)
                 {
-                    case OPEN_ACCOUNT:
-                        System.out.println(
-                            "Open Account - to be implemented in a later lab"
-                        );
-                        break;
+                    case 1 -> MenuOption.OPEN_ACCOUNT;
+                    case 2 -> MenuOption.DEPOSIT;
+                    case 3 -> MenuOption.WITHDRAW;
+                    case 4 -> MenuOption.TRANSFER;
+                    case 6 -> MenuOption.EXIT;
+                    default -> null;
+                };
 
-                    case DEPOSIT:
-                        depositMoney();
-                        break;
+                if (choice == 5)
+                {
+                    displayAccounts();
+                }
+                else if (selected == null)
+                {
+                    System.out.println("Invalid choice!");
+                }
+                else
+                {
+                    switch (selected)
+                    {
+                        case OPEN_ACCOUNT:
+                            System.out.println(
+                                "Open Account - to be implemented in a later lab"
+                            );
+                            break;
 
-                    case WITHDRAW:
-                        withdrawMoney();
-                        break;
+                        case DEPOSIT:
+                            depositMoney();
+                            break;
 
-                    case TRANSFER:
-                        transferMoney();
-                        break;
+                        case WITHDRAW:
+                            withdrawMoney();
+                            break;
 
-                    case EXIT:
-                        System.out.println(
-                            "Thank you for using MiniBank!"
-                        );
-                        break;
+                        case TRANSFER:
+                            transferMoney();
+                            break;
+
+                        case EXIT:
+                            System.out.println(
+                                "Thank you for using MiniBank!"
+                            );
+                            break;
+                    }
                 }
             }
+            catch (InputMismatchException e)
+            {
+                System.out.println("Please enter a valid menu number.");
+                sc.nextLine();
+                choice = 0;
+            }
+            finally
+            {
+                System.out.println("Menu operation completed.");
+            }
 
-        } while (choice != 5);
+        } while (choice != 6);
 
         sc.close();
     }
@@ -145,96 +170,148 @@ public class MiniBank
 
     public static void depositMoney()
     {
-        System.out.print("Enter account number: ");
-        String number = sc.next();
-
-        Account account = findAccount(number);
-
-        if (account != null)
+        try
         {
+            System.out.print("Enter account number: ");
+            String number = sc.next();
+
+            Account account = findAccount(number);
+
+            if (account == null)
+            {
+                throw new AccountNotFoundException(number);
+            }
+
             System.out.print("Enter amount to deposit: ");
             long amount = sc.nextLong();
 
-            if (amount > 0 && account.isActive())
-            {
-                account.deposit(amount);
-                System.out.println("Deposit successful!");
-                System.out.println(account);
-            }
-            else
-            {
-                System.out.println(
-                    "Invalid amount or inactive account."
-                );
-            }
+            account.deposit(amount);
+
+            System.out.println("Deposit successful!");
+            System.out.println(account);
         }
-        else
+        catch (AccountNotFoundException e)
         {
-            System.out.println("Account not found!");
+            System.out.println(e.getMessage());
+        }
+        catch (InvalidAmountException e)
+        {
+            System.out.println(e.getMessage());
+        }
+        catch (InputMismatchException e)
+        {
+            System.out.println("Invalid amount. Please enter a whole number.");
+            sc.nextLine();
+        }
+        finally
+        {
+            System.out.println("Deposit operation completed.");
         }
     }
 
     public static void withdrawMoney()
     {
-        System.out.print("Enter account number: ");
-        String number = sc.next();
-
-        Account account = findAccount(number);
-
-        if (account != null)
+        try
         {
+            System.out.print("Enter account number: ");
+            String number = sc.next();
+
+            Account account = findAccount(number);
+
+            if (account == null)
+            {
+                throw new AccountNotFoundException(number);
+            }
+
             System.out.print("Enter amount to withdraw: ");
             long amount = sc.nextLong();
 
-            if (account.withdraw(amount))
-            {
-                System.out.println("Withdrawal successful!");
-                System.out.println(account);
-            }
-            else
-            {
-                System.out.println("Withdrawal failed!");
-            }
+            account.withdraw(amount);
+
+            System.out.println("Withdrawal successful!");
+            System.out.println(account);
         }
-        else
+        catch (InsufficientFundsException e)
         {
-            System.out.println("Account not found!");
+            System.out.println(e.getMessage());
+            System.out.println("Shortfall: " + e.getShortfall());
+        }
+        catch (AccountNotFoundException e)
+        {
+            System.out.println(e.getMessage());
+        }
+        catch (InvalidAmountException e)
+        {
+            System.out.println(e.getMessage());
+        }
+        catch (InputMismatchException e)
+        {
+            System.out.println("Invalid amount. Please enter a whole number.");
+            sc.nextLine();
+        }
+        finally
+        {
+            System.out.println("Withdrawal operation completed.");
         }
     }
 
     public static void transferMoney()
     {
-        System.out.print("Enter sender account number: ");
-        String senderNumber = sc.next();
-
-        System.out.print("Enter receiver account number: ");
-        String receiverNumber = sc.next();
-
-        Account sender = findAccount(senderNumber);
-        Account receiver = findAccount(receiverNumber);
-
-        if (sender != null && receiver != null
-                && !sender.equals(receiver))
+        try
         {
+            System.out.print("Enter sender account number: ");
+            String senderNumber = sc.next();
+
+            System.out.print("Enter receiver account number: ");
+            String receiverNumber = sc.next();
+
+            Account sender = findAccount(senderNumber);
+            Account receiver = findAccount(receiverNumber);
+
+            if (sender == null)
+            {
+                throw new AccountNotFoundException(senderNumber);
+            }
+
+            if (receiver == null)
+            {
+                throw new AccountNotFoundException(receiverNumber);
+            }
+
             System.out.print("Enter transfer amount: ");
             long amount = sc.nextLong();
 
-            if (amount > 0 && sender.withdraw(amount))
-            {
-                receiver.deposit(amount);
+            sender.transfer(receiver, amount);
 
-                System.out.println("Transfer successful!");
-                System.out.println("Sender: " + sender);
-                System.out.println("Receiver: " + receiver);
-            }
-            else
-            {
-                System.out.println("Transfer failed!");
-            }
+            System.out.println("Transfer successful!");
+            System.out.println("Sender: " + sender);
+            System.out.println("Receiver: " + receiver);
         }
-        else
+        catch (InsufficientFundsException e)
         {
-            System.out.println("Invalid accounts!");
+            System.out.println(e.getMessage());
+            System.out.println("Shortfall: " + e.getShortfall());
+        }
+        catch (AccountNotFoundException e)
+        {
+            System.out.println(e.getMessage());
+        }
+        catch (InvalidAmountException e)
+        {
+            System.out.println(e.getMessage());
+        }
+        catch (BankException e)
+        {
+            System.out.println(e.getMessage());
+        }
+        catch (InputMismatchException e)
+        {
+            System.out.println("Invalid amount. Please enter a whole number.");
+            sc.nextLine();
+        }
+        finally
+        {
+            System.out.println("Transfer operation completed.");
         }
     }
 
@@ -406,7 +483,6 @@ public class MiniBank
         System.out.println("\n===== PRACTICAL 7 TESTS =====");
         System.out.println("--- Annotation Validation ---");
 
-        // Create an account with a negative balance for testing.
         Account testAccount =
             new SavingsAccount("AC0099", "Test", -500, 1000);
 
@@ -422,6 +498,46 @@ public class MiniBank
             {
                 System.out.println("Validation error: " + error);
             }
+        }
+    }
+
+    public static void testPractical8()
+    {
+        System.out.println("\n===== PRACTICAL 8 TESTS =====");
+
+        System.out.println("--- Try-with-resources test ---");
+
+    try (BankResource resource = new BankResource())
+    {
+        resource.useResource();
+    }
+    catch (Exception e)
+    {
+        System.out.println("Resource error: " + e.getMessage());
+    }
+        System.out.println("\n--- Insufficient funds test ---");
+
+        Account testAccount =
+            new SavingsAccount("AC0089", "Test", 1000, 0);
+
+        try
+        {
+            testAccount.withdraw(5000);
+        }
+        catch (InsufficientFundsException e)
+        {
+            System.out.println(e.getMessage());
+            System.out.println("Shortfall: " + e.getShortfall());
+            System.out.println("Balance remains: "
+                + testAccount.getBalance());
+        }
+        catch (BankException e)
+        {
+            System.out.println(e.getMessage());
+        }
+        finally
+        {
+            System.out.println("Practical 8 test completed.");
         }
     }
 }
