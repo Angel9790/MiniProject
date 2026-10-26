@@ -56,7 +56,7 @@ public class MiniBank
         do
         {
             System.out.println("\n===== MINIBANK MENU =====");
-            System.out.println("1. Display Accounts");
+            System.out.println("1. Open Account");
             System.out.println("2. Deposit");
             System.out.println("3. Withdraw");
             System.out.println("4. Transfer");
@@ -65,30 +65,48 @@ public class MiniBank
 
             choice = sc.nextInt();
 
-            switch (choice)
+            MenuOption selected = switch (choice)
             {
-                case 1:
-                    displayAccounts();
-                    break;
+                case 1 -> MenuOption.OPEN_ACCOUNT;
+                case 2 -> MenuOption.DEPOSIT;
+                case 3 -> MenuOption.WITHDRAW;
+                case 4 -> MenuOption.TRANSFER;
+                case 5 -> MenuOption.EXIT;
+                default -> null;
+            };
 
-                case 2:
-                    depositMoney();
-                    break;
+            if (selected == null)
+            {
+                System.out.println("Invalid choice!");
+            }
+            else
+            {
+                switch (selected)
+                {
+                    case OPEN_ACCOUNT:
+                        System.out.println(
+                            "Open Account - to be implemented in a later lab"
+                        );
+                        break;
 
-                case 3:
-                    withdrawMoney();
-                    break;
+                    case DEPOSIT:
+                        depositMoney();
+                        break;
 
-                case 4:
-                    transferMoney();
-                    break;
+                    case WITHDRAW:
+                        withdrawMoney();
+                        break;
 
-                case 5:
-                    System.out.println("Thank you for using MiniBank!");
-                    break;
+                    case TRANSFER:
+                        transferMoney();
+                        break;
 
-                default:
-                    System.out.println("Invalid choice!");
+                    case EXIT:
+                        System.out.println(
+                            "Thank you for using MiniBank!"
+                        );
+                        break;
+                }
             }
 
         } while (choice != 5);
@@ -126,7 +144,9 @@ public class MiniBank
             }
             else
             {
-                System.out.println("Invalid amount or inactive account.");
+                System.out.println(
+                    "Invalid amount or inactive account."
+                );
             }
         }
         else
@@ -220,6 +240,7 @@ public class MiniBank
         Account a2 = new Account("AC0099", "Riya", 4000);
 
         System.out.println("Account: " + a1);
+
         System.out.println("Accounts equal: " + a1.equals(a2));
 
         System.out.println("Same hash code: "
@@ -253,28 +274,31 @@ public class MiniBank
                 + (c1.getAddress() != c2.getAddress()));
     }
 
-    
     public static void testPractical4()
     {
         System.out.println("\n===== PRACTICAL 4 TESTS =====");
 
         System.out.println("Valid mobile: "
                 + Validator.isValidMobile("9876543210"));
+
         System.out.println("Invalid mobile: "
                 + Validator.isValidMobile("12345"));
 
         System.out.println("Valid email: "
                 + Validator.isValidEmail("angel@example.com"));
+
         System.out.println("Invalid email: "
                 + Validator.isValidEmail("angel@"));
 
         System.out.println("Valid PAN: "
                 + Validator.isValidPan("ABCDE1234F"));
+
         System.out.println("Invalid PAN: "
                 + Validator.isValidPan("ABC123"));
 
         System.out.println("Valid IFSC: "
                 + Validator.isValidIfsc("SBIN0001234"));
+
         System.out.println("Invalid IFSC: "
                 + Validator.isValidIfsc("123"));
 
@@ -283,7 +307,7 @@ public class MiniBank
         try
         {
             Command command =
-                    CommandParser.parse("DEPOSIT AC0001 500");
+                CommandParser.parse("DEPOSIT AC0001 500");
 
             System.out.println("Command type: " + command.type());
             System.out.println("Account number: "
@@ -300,9 +324,8 @@ public class MiniBank
         if (accountCount > 0)
         {
             System.out.println(
-                    StatementFormatter.buildStatement(accounts[0]));
+                StatementFormatter.buildStatement(accounts[0])
+            );
         }
     }
 }
-
-
