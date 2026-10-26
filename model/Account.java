@@ -5,11 +5,13 @@ import exception.BankException;
 import exception.InsufficientFundsException;
 import exception.InvalidAmountException;
 import java.io.Serializable;
+import model.annotation.Id;
 
 public class Account implements Serializable, Comparable<Account> {
 
     private static final long serialVersionUID = 1L;
 
+    @Id
     private final String accountNumber;
     private String ownerName;
     private long balance;

@@ -1,9 +1,11 @@
 package model;
+import model.annotation.Id;
 
 public class Customer implements Cloneable {
     private static long customerCounter = 100;
 
-    private final String customerId;
+@Id
+private final String customerId;
     private String name;
     private String email;
     private String mobile;
