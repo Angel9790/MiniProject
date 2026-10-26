@@ -1,37 +1,114 @@
-public class Customer {
 
+public class Customer implements Cloneable
+{
     private String name;
     private String email;
     private String mobile;
     private final String customerId;
 
-    private static long customerCounter = 100;
+    private static long customerCounter = 101;
 
-    private static String generateCustomerId() {
-        customerCounter++;
-        return "CUST" + customerCounter;
+    private Address address;
+
+    private static String generateCustomerId()
+    {
+        return "CUST" + customerCounter++;
     }
 
-    public Customer(String name, String email, String mobile) {
+    public Customer(String name, String email, String mobile)
+    {
+        this(name, email, mobile, generateCustomerId(), null);
+    }
+
+    public Customer(String name, String email, String mobile, Address address)
+    {
+        this(name, email, mobile, generateCustomerId(), address);
+    }
+
+    private Customer(String name, String email, String mobile,
+                     String customerId, Address address)
+    {
         this.name = name;
         this.email = email;
         this.mobile = mobile;
-        this.customerId = generateCustomerId();
+        this.customerId = customerId;
+        this.address = address;
     }
 
-    public String getName() {
+    public String getName()
+    {
         return name;
     }
 
-    public String getEmail() {
+    public String getEmail()
+    {
         return email;
     }
 
-    public String getMobile() {
+    public String getMobile()
+    {
         return mobile;
     }
 
-    public String getCustomerId() {
+    public String getCustomerId()
+    {
         return customerId;
+    }
+
+    public Address getAddress()
+    {
+        return address;
+    }
+
+    public Customer clone()
+    {
+        Address copiedAddress = null;
+
+        if (address != null)
+        {
+            copiedAddress = new Address(
+                address.getLine(),
+                address.getCity(),
+                address.getPincode()
+            );
+        }
+
+        return new Customer(
+            name, email, mobile, customerId, copiedAddress
+        );
+    }
+
+    public static class Address
+    {
+        private String line;
+        private String city;
+        private String pincode;
+
+        public Address(String line, String city, String pincode)
+        {
+            this.line = line;
+            this.city = city;
+            this.pincode = pincode;
+        }
+
+        public String getLine()
+        {
+            return line;
+        }
+
+        public String getCity()
+        {
+            return city;
+        }
+
+        public String getPincode()
+        {
+            return pincode;
+        }
+
+        public String toString()
+        {
+            return line + ", " + city + " - " + pincode;
+        }
     }
 }
